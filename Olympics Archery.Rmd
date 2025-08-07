@@ -1,0 +1,260 @@
+---
+title: "Olympic Archery"
+author: "Christopher Arzate Benitez"
+date: "3/16/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r Setup, message=FALSE, include=FALSE}
+library(tidyverse)
+Olympics<-read.csv("athlete_events.csv")
+```
+
+The art of Archery: Using a bow and arrow to see how accurate one can hit their target. This art will be shown well especially in the most important sports event in the world, the Olympics. In this project, I'll be discussing how countries did well in archery by using medal numbers. Then we see specific countries and how each sex earned their medals for their team.  But first, we must discuss the history of archery in the Olympics. 
+
+Olympics was the introduced in the second ever Olympics in 1900^[https://en.wikipedia.org/wiki/Archery_at_the_Summer_Olympics] however it wasn't a recurring event the Olympics till 1972. We can see that in the table if we filter the sorts to be archery and see the unique values for year. 
+
+```{r Archery Data Set, include=FALSE}
+Archery<-Olympics %>%
+  filter(Sport=="Archery") %>% 
+  arrange(Year)
+```
+
+
+```{r Year, warning=FALSE}
+unique(Archery[("Year")])
+Archery$Medal<-as.factor(Archery$Medal) 
+Archery$Medal<-fct_relevel(Archery$Medal,c("Gold","Silver","Bronze"))
+```
+
+In the years, 1900, 1904, 1908, and 1920 were the early stages of archery. The events during these times weren't organized and the rules were inconsistent between these four events. This made the people in charge of the Olympics to remove archery. Luckily, a committee was created in 1931 to add archery back to the Olympics and they did in 1972. After the reintroduction, the sport became reoccurring sport in Olympics^[https://worldarchery.sport/sport/history/archery-olympic-games].
+
+This will just affect the amount of medals given if we compare them to different sports but comparing isn't the main focus. 
+
+## General Archery information
+In the last 16 Olympic events, a total of 1,113 participants have participated for Archery
+
+```{r echo=TRUE, message=FALSE}
+A_sex<-Archery%>% 
+  group_by(Name, Sex) %>%
+  summarise(count=n())
+
+ggplot(A_sex,aes(x=Sex,fill=Sex))+
+  geom_bar()+
+  geom_text(aes(label = ..count..),stat="count",vjust = -0.2)
+```
+
+Of those participants, about 500 of them are females and 613 are males. Now let's inspect the amount of countries participated in archery.
+ 
+
+```{r}
+countries<-Archery %>% 
+  group_by(Team) %>% 
+  summarise(participants=n()) %>%
+  filter(participants>25) %>% 
+  arrange(-participants)
+```
+
+
+
+```{r}
+ggplot(countries,aes(x=fct_reorder(Team,-participants),y=participants,fill="red"))+
+  geom_col(show.legend = FALSE)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  geom_text(aes(label = participants), vjust = -0.2)+
+  labs(x="Teams",Y="Participants", Title="Participants")
+  
+```
+
+With those participants, the United States, France, Great Britain, South Korea and China are the top countries to send people for archery.
+And about 102 countries have sent archery participants and the top five countries to participate in Archery were the United States, France,Great Britain,
+South Korea, and China. 
+
+Those that mean the more participated must have the most medals? Answer is no and we will see that countries like Belgium who aren't in the top five is one of the best in archery.
+
+## Medals 
+
+After seeing the participation, and how many males and females have participated in archery in the Olympics, now we must look on how many medals each team has won in archery.
+
+```{r message=FALSE}
+medals<- Archery %>% 
+  group_by(Medal,Team) %>% 
+  summarise(count=n())
+
+medals_earn<-medals %>% 
+  drop_na(Medal)
+
+medals_earn$Medal<-as.factor(medals_earn$Medal) 
+medals_earn$Medal<-fct_relevel(medals_earn$Medal,c("Gold","Silver","Bronze"))
+
+
+G_S_B<-medals %>% 
+  pivot_wider(names_from = Medal,
+              values_from=count) 
+
+G_S_B[is.na(G_S_B)]=0
+
+medal_numbers<-G_S_B %>%
+  rename(no_medals="NA")%>% 
+  mutate(total_medals=Bronze+Silver+Gold) %>% 
+  mutate(total_participation= Bronze+Silver+Gold+no_medals) %>% 
+  mutate(percentage=100*(total_medals/sum(total_medals)))
+
+medal_numbers<-medal_numbers %>% 
+  arrange(-total_medals) %>% 
+  mutate(percentage_gold=100*(Gold/sum(Gold))) %>% 
+  mutate(percentage_silver=100*(Silver/sum(Silver))) %>% 
+  mutate(percentage_bronze=100*(Bronze/sum(Bronze))) %>% 
+  arrange(-percentage_gold,-percentage_silver,-percentage_bronze)
+```
+
+
+
+```{r}
+medal_percentage<- medal_numbers %>% 
+  filter(percentage>0)
+ggplot(medal_percentage,aes(x=fct_reorder(Team,-percentage),y=percentage,fill="red"))+
+  geom_col(show.legend = FALSE)+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  labs(x="Teams",Y="Percentage of Medals Earned", Title="Medal Ownerships")
+```
+
+In this data set about 352 medals were given out for archery. 
+In those countries, we see that South Korea is holding 19.6% of the archery medals the Olympics have given out have given out. Then it follows with Belgium with 14.7%,France with 13.6%, United States with, 10.4% and finally China with 5.4%.
+
+We can look deeper by what is the percentage of countries having a gold, silver, and bronze level and see how teams performed.
+
+```{r}
+ggplot(medal_percentage,aes(x=fct_reorder(Team,-percentage_gold),
+                            y=percentage_gold))+
+  geom_col()+
+  theme_minimal()+
+  labs(x="Teams",
+       y="Percentage of Gold Medal Holders",
+       title="Gold Medals") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+ 
+
+```
+
+For the Gold Medals graph, South Korea holds 36.3%, then Belgium with 25.9%,United States with 10.4%, Netherlands with 5.9%, and France with 5.2%.
+
+```{r}
+ggplot(medal_percentage,aes(x=fct_reorder(Team,-percentage_silver),
+                            y=percentage_silver))+
+  geom_col()+
+  theme_minimal()+
+  labs(x="Teams",
+       y="Percentage of Silver Medal Holders",
+       title="Silver Medals") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+For the Silver Medals graph,France is in the top with 20.8%, then US with 12.5 %, Belgium and China with 11.7%, and South Korea with 9.2%.
+
+```{r}
+ggplot(medal_percentage,aes(x=fct_reorder(Team,-percentage_bronze),y=percentage_bronze))+
+  geom_col()+
+  theme_minimal()+
+  labs(x="Teams",
+       y="Percentage of Bronze Medal Holders",
+       title="Bronze Medals") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+For Bronze medals, France is leading with 16.3%, then the U.S 12.2%, Great Britain and
+South Korea with 9.2%, and finally Chinese Taipei with 6.1%.
+
+
+If we arrange the teams by who earn the most gold, then silver and then bronze,
+the top five countries in archery would be South Korea, Belgium, United States, Netherlands, France. It is surprised to see that Belgium and Netherlands have gotten more medals than countries who participated more such as Great Britain and China. From those graphs, it shows that participation doesn't always mean more medals of the country. It just means it gives them more opportunities to earn medals.  
+
+Now let's look into the top three countries and compare if males or females medal earned count. 
+
+## South Korea
+```{r message=FALSE}
+SK_sex<-Archery%>% 
+  filter(Team=="South Korea",
+         Medal!=is.na(NA)) %>% 
+  group_by(Name, Sex) %>% 
+   summarise(count=n())
+
+ggplot(SK_sex,aes(x=Sex,fill=Sex))+
+  geom_bar()+
+   theme_minimal()+
+  geom_text(aes(label = ..count..),stat="count",vjust = -0.2)
+```
+
+```{r}
+s_korea<-Archery %>% 
+  filter(Team=="South Korea",
+         Medal!=is.na(NA)) 
+ggplot(s_korea,aes(x=Sex,fill=Medal))+
+  geom_bar(position="dodge")+
+  labs(title="South Korea")+
+  theme_minimal()+
+  geom_text(aes(label = ..count..), stat = "count", vjust = 1.5, colour = "white", position=position_dodge(.9))
+```
+
+In South Korea, they have sent 20 unique female participants and 16 unique male participates through the Olympics(Showed in the bar graph).Those twenty females won 32 gold medals which is almost twice the amount males won. Males earned more silver medals by a difference of one ,and females earned more bronze medals than males. That means the South Korean Team is being carried by female participants but it also shows that inclusion of both sexes can allow for a country to earn more medals. We can see a difference when we look into Belgium.
+
+## Belgium 
+```{r message=FALSE}
+B_sex<-Archery%>% 
+  filter(Team=="Belgium") %>% 
+  group_by(Name, Sex) %>%
+  summarise(count=n())
+
+ggplot(B_sex,aes(x=Sex,fill=Sex))+
+  geom_bar()+
+  theme_minimal()+
+  geom_text(aes(label = ..count..),stat="count",vjust = -0.2)
+```
+
+```{r}
+belgium<-Archery %>% 
+  filter(Team=="Belgium",
+         Medal!=is.na(NA))
+ggplot(belgium,aes(x=Sex,fill=Medal))+
+  geom_bar(position="dodge")+
+  theme_minimal()+
+  labs(title="Belgium")+
+  geom_text(aes(label = ..count..), stat = "count", vjust = 1.5, colour = "white", position=position_dodge(.9))
+```
+
+For Belgium, the first bar plot shows taht  28 unique male participated in the Olympics and only 2 unique female participants. 
+Only males have won medals: 35 gold medals, 14 silver medals , and 3 bronze medals. Here we can see if Belgium can find or train more females into archery, it could be possible they can earn more medals to beat South Korea. 
+
+## United States
+```{r message=FALSE}
+ST_sex<-Archery%>% 
+  filter(Team=="United States") %>% 
+  group_by(Name, Sex) %>%
+  summarise(count=n())
+
+ggplot(ST_sex,aes(x=Sex,fill=Sex))+
+  geom_bar()+
+  theme_minimal()+
+  geom_text(aes(label = ..count..),stat="count",vjust = -0.2)
+```
+
+```{r}
+us<-Archery %>% 
+  filter(Team=="United States",
+         Medal!=is.na(NA))
+ggplot(us,aes(x=Sex,fill=Medal))+
+  geom_bar(position="dodge")+
+  theme_minimal()+
+  labs(title="United States")+
+  geom_text(aes(label = ..count..), stat = "count", vjust = 1.5, colour = "white", position=position_dodge(.9))
+```
+
+The first bar plot shows the Unites States sent out 39 unique male and 27 unique female participants to the Olympics.
+Males have earned the most medals where they won 10 gold medals, 13 silver medals,and  7 bronze medals. 
+Female have earned the most medals where they won 4 gold medals, 2 silver medals,and 5 bronze medals. With the distribution, the US sends both sexes but not as equally as South Korea but not as male heavy like Belgium.
+
+## Conclusion 
+The top three teams, South Korea, Belgium , and United States had different sexes carrying them in Archery. South Korea team has their female competitors winning more compare to Belgium ad Untied States, Belgium has their male teams winning their medals, and united States have both sexes keeping them in 3rd spot. It could be the amount of female participants being sent can have an effect of archery teams rank placement so that will be an area of interest to further look into if I had mroe time. Now, no matter what sex you are, people can enjoy the precision of a person aim towards a target. 
