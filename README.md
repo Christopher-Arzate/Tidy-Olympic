@@ -9,8 +9,9 @@ This project was to train and test different R graphics and learn how to use R-m
 -South Korean Females Have earned most of the Archery Medals compared to South Korean Males 
 
 ## Documents
-**[Archery Report](https://github.com/Christopher-Arzate/CTA/blob/main/CTA_boarding_num.sql)**:
-**[Archery Rmarkdown  File](https://github.com/Christopher-Arzate/Tidy-Olympic/blob/main/Olympics%20Archery.Rmd)**:
+**[Archery Report](https://github.com/Christopher-Arzate/Tidy-Olympic/blob/main/Olympics-Archery.pdf)**
+
+**[Archery Rmarkdown  File](https://github.com/Christopher-Arzate/Tidy-Olympic/blob/main/Olympics%20Archery.Rmd)**
 
 
 ## Tools 
